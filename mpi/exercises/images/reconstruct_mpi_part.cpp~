@@ -1,0 +1,153 @@
+#include <mpi.h>
+#include "pgmio.hpp"
+
+
+double gettime(){
+  return MPI_Wtime();
+}
+
+int main(int argc, char** argv){
+  string filename = "edge192x128.pgm";
+  string filename2 = "edge192x128_re_mpip.pgm";
+  
+  int N = atoi(argv[1]);
+  
+  int m, n;
+  pgmsize(filename, m, n);
+  //cout << m << " " << n << endl;
+
+  //Allocate master buffer
+  float *masterbuff = new float[m*n];
+  
+  //initialize mpi environment and get rank/size-----------------
+  MPI_Init(NULL, NULL);
+  //Find out rank, size
+  int rank, size;
+  MPI_Comm comm = MPI_COMM_WORLD; //Communicator
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+  //-------------------------------------------------------------
+
+  if(m % size != 0){
+    cout << "Height of the image must be multiple of No. of processes="
+	 << size << endl;
+    MPI_Abort(comm, 1);
+  }
+
+  if(rank == 0){
+    //read image
+    pgmread(filename, masterbuff, m, n);
+    // //
+    // cout << masterbuff[0] << " " << masterbuff[m*n-1] << endl;
+    // //
+  }
+  
+  int mp = m / size;
+  //allocate buffer
+  float *buff = new float[mp*n];
+
+  //Scatter the master buffer
+  MPI_Scatter(masterbuff, mp*n, MPI_FLOAT, buff, mp*n, MPI_FLOAT,
+	      0, comm);
+
+  // //
+  // cout << "rank " << rank << ": " << buff[0*n+0] << " "
+  //      << buff[(mp-1)*n+n-1] << endl;
+  // //
+  
+  //allocate array to store the buffer + halo
+  //allocate array old_b
+  //allocate array new_b
+  float* edge = new float[(mp+2)*(n+2)];
+  float* old_b = new float[(mp+2)*(n+2)];
+  float* new_b = new float[(mp+2)*(n+2)];
+
+  //set halos to 255
+  for(int j = 0; j < n+2; j++){
+    edge[0*(n+2)+j] = 255; edge[(mp+1)*(n+2)+j] = 255;
+    new_b[0*(n+2)+j] = 255; new_b[(mp+1)*(n+2)+j] = 255;
+  }
+  for(int i = 1; i < mp+1; i++){
+    edge[i*(n+2)+0] = 255; edge[i*(n+2)+(n+1)] = 255;
+    new_b[i*(n+2)+0] = 255; new_b[i*(n+2)+(n+1)] = 255;
+  }
+  
+  //copy buff to edge
+  for(int i = 0; i < mp; i++){
+    for(int j = 0; j < n; j++){
+      edge[(i+1)*(n+2)+(j+1)] = buff[i*n+j]; 
+    }
+  }
+
+  // //
+  // cout << "rank " << rank << ": " << edge[1*(n+2)+1] << " "
+  //      << edge[mp*(n+2)+n] << endl;
+  // //
+  
+  //Initialize the old_b array
+  for(int i = 0; i < mp+2; i++){
+    for(int j = 0; j < n+2; j++){
+      old_b[i*(n+2)+j] = 255;
+    }
+  }
+  
+  double tstart = gettime();
+  
+  //Loop over iterations-------------------------------------
+  for(int it = 0; it < N; it++){
+    //get new values (do not update the halo)
+    for(int i = 1; i < mp+1; i++){
+      for(int j = 1; j < n+1; j++){
+  	new_b[i*(n+2)+j] = (old_b[i*(n+2)+(j-1)]+
+			     old_b[i*(n+2)+(j+1)]+
+			     old_b[(i-1)*(n+2)+j]+
+			     old_b[(i+1)*(n+2)+j]-
+			     edge[i*(n+2)+j]) / 4;
+      }
+    }
+    
+    //backup the new to the old array (without the halo)
+    for(int i = 1; i < mp+1; i++){
+      for(int j = 1; j < n+1; j++){
+  	old_b[i*(n+2)+j] = new_b[i*(n+2)+j];
+      }
+    }
+  }
+  //---------------------------------------------------------
+
+  double tstop = gettime();
+
+  if(rank == 0)
+    printf("\nTime taken was  %f seconds\n", tstop-tstart);
+  
+  //copy old_b back to buff
+  for(int i = 1; i < mp+1; i++){
+    for(int j = 1; j < n+1; j++){
+      buff[(i-1)*n+(j-1)] = old_b[i*(n+2)+j];
+    }
+  }
+  
+  //Gather to the master buffer
+  MPI_Gather(buff, mp*n, MPI_FLOAT, masterbuff, mp*n, MPI_FLOAT,
+  	     0, comm);
+  
+  //free edge, old_b and new_b
+  delete[] edge;
+  delete[] old_b;
+  delete[] new_b;
+
+  //free buffer
+  delete[] buff;
+
+  if(rank == 0){
+    //write image 
+    pgmwrite(filename2, masterbuff, m, n);
+  }
+  
+  MPI_Finalize();
+
+  //free master buffer
+  delete[] masterbuff;
+  
+  return 0;
+}

@@ -1,0 +1,129 @@
+#include "pgmio.hpp"
+
+
+/*
+ *  Routine to get the size of a PGM data file
+ *
+ *  Note that this assumes a single line comment and no other white space.
+ */
+void pgmsize(string filename, int &nx, int &ny){
+  ifstream fp;
+  fp.open(filename, ios::in);
+  if(fp.fail()){
+    cerr << "pgmsize: cannot open <" << filename << ">\n";
+    exit(-1);
+  }
+
+  int n = MAXLINE;
+  char dummy[MAXLINE];
+  fp.getline(dummy,n);
+  fp.getline(dummy,n);
+
+  fp >> nx >> ny;
+  
+  fp.close();
+}
+
+
+/*
+ *  Routine to read a PGM data file into a 2D floating point array
+ *  vx[nx][ny].
+ *
+ *  Note that this assumes a single line comment and no other white space.
+ */
+void pgmread(string filename, float *vx, int nx, int ny){
+  ifstream fp;
+  fp.open(filename, ios::in);
+  if(fp.fail()){
+    cerr << "pgmread: cannot open <" << filename << ">\n";
+    exit(-1);
+  }
+
+  int n = MAXLINE;
+  char dummy[MAXLINE];
+  fp.getline(dummy,n);
+  fp.getline(dummy,n);
+  
+  int nxt, nyt;
+  fp >> nxt >> nyt;
+  if(nxt != nx || nyt != ny){
+    cerr << "pgmread: size mismatch, (nx,ny) = (" << nxt << ","
+	 << nyt << ") expected (" << nx << "," << ny << ")\n";
+    exit(-1);
+  }
+
+  int t;
+  fp >> t;
+
+  for(int j = 0; j < ny; j++){
+    for(int i = 0; i < nx; i++){
+      fp >> vx[j*nx+i];
+      //cout << vx[j*nx+i] << " ";
+    }
+  }
+  
+  fp.close();
+}
+
+
+/*
+ *  Routine to write a PGM image file from a 2D floating point array
+ *  x[nx][ny].
+ */
+void pgmwrite(string filename, float *vx, int nx, int ny){
+  ofstream fp;
+  fp.open(filename, ios::out);
+  if(fp.fail()){
+    cerr << "pgmwrite: cannot open <" << filename << ">\n";
+    exit(-1);
+  }
+  
+  cout << "Writing " << nx << " x "<< ny << " picture into file: "
+       << filename << "\n";
+
+  /*
+   *  Find the max and min absolute values of the array
+   */
+  float xmin = fabs(vx[0]);
+  float xmax = fabs(vx[0]);
+  for(int j = 0; j < ny; j++){
+    for(int i = 0; i < nx; i++){
+      if(fabs(vx[j*nx+i]) < xmin) xmin = fabs(vx[j*nx+i]);
+      if(fabs(vx[j*nx+i]) > xmax) xmax = fabs(vx[j*nx+i]);
+    }
+  }
+  if(xmin == xmax) xmin = xmax-1.0;
+
+  float thresh = 255.0;
+  
+  fp << "P2\n";
+  fp << "# Written by pgmio::pgmwrite\n";
+  fp << nx << " " << ny << "\n";
+  fp << int(thresh) << "\n";
+  
+  double fval;
+  int grey, k = 0;
+  for(int j = 0; j < ny; j++){
+    for(int i = 0; i < nx; i++){
+      /*
+       *  Scale the value appropriately so it lies between 0 and thresh
+       */
+      fval = thresh*((fabs(vx[j*nx+i])-xmin)/(xmax-xmin))+0.5;
+      grey = int(fval);
+
+      fp << setw(3) << grey << " ";
+
+      if(0 == (k+1)%18) fp << "\n";
+
+      k++;
+    }
+  }
+  
+  if(0 != (k+1)%18) fp << "\n";
+  fp.close();
+}
+
+
+
+
+  

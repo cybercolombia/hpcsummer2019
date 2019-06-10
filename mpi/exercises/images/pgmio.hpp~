@@ -1,0 +1,18 @@
+#ifndef _PGMIO_HPP
+#define _PGMIO_HPP
+
+#include <cmath>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+#include <string>
+using namespace std;
+
+#define MAXLINE 128
+
+
+void pgmsize(string filename, int &nx, int &ny);
+void pgmread(string filename, float *vx, int nx, int ny);
+void pgmwrite(string filename, float *vx, int nx, int ny);
+
+#endif
