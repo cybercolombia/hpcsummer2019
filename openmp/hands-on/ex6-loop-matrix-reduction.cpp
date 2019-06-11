@@ -42,5 +42,12 @@ int main(int argc, char *argv[]){
 
     PRINTMATRIX(m1,Nr1,Nc2);
 
+
+    free(m1[0]);
+    free(m2[0]);
+    free(res[0]);
+    free(m1), m1 = NULL;
+    free(m2), m2 = NULL;
+    free(res), res = NULL;
     return 0;
 }

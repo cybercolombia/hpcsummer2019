@@ -6,45 +6,46 @@
     #define omp_get_thread_num() 0
 #endif
 
-char *hByte(unsigned int bytes){
-    char r_array[128];
-    if (bytes <= 0) return "0 Bytes";
-    else if (bytes >= 1073741824) snprintf(r_array, sizeof r_array, "%.2f GBytes", (((float) bytes)/1073741824));
-    else if (bytes >= 1048576) snprintf(r_array, sizeof r_array, "%.2f MBytes", (((float) bytes)/1048576));
-    else if (bytes >= 1024) snprintf(r_array, sizeof r_array, "%.2f KBytes", (((float) bytes)/1024));
-    else snprintf(r_array, sizeof r_array, "%d Bytes", bytes);
-    return r_array;
+void hByte(unsigned int bytes){
+    char r_array[128] = "0 Bytes";
+    if (bytes > 0){
+        if (bytes >= 1073741824) snprintf(r_array, sizeof r_array, "%.2f GBytes", (((float) bytes)/1073741824));
+        else if (bytes >= 1048576) snprintf(r_array, sizeof r_array, "%.2f MBytes", (((float) bytes)/1048576));
+        else if (bytes >= 1024) snprintf(r_array, sizeof r_array, "%.2f KBytes", (((float) bytes)/1024));
+        else snprintf(r_array, sizeof r_array, "%d Bytes", bytes);
+    }
+    printf("         size of array = %s\n",r_array);
 };
 
 #define CREATEARRAY(_VAR,_TYPE,_SIZE,_ZEROVAL) \
-	if ( (_VAR=(_TYPE*) malloc( _SIZE * sizeof(_TYPE) )) == NULL ) \
-		perror("memory allocation for " #_VAR); \
-	printf("\nNAME::   Array Name = " #_VAR "(" #_TYPE ")\n"); \
-	printf("SIZE::   number of elements = %d\n",_SIZE); \
-	for(int _IT_i = 0; _IT_i < _SIZE; _IT_i++) \
-		_VAR[_IT_i] = _ZEROVAL; \
-	printf("         Initialized with value: " #_ZEROVAL "\n"); \
-	printf("         size of element = %d bytes\n",sizeof(_TYPE)); \
-	printf("         size of array = %s\n",hByte(_SIZE * sizeof(_TYPE))); \
-	printf("ARRAYS:: To free memory please use free(" #_VAR ")\n\n")
+    if ( (_VAR=(_TYPE*) malloc( _SIZE * sizeof(_TYPE) )) == NULL ) \
+        perror("memory allocation for " #_VAR); \
+    printf("\nNAME::   Array Name = " #_VAR "(" #_TYPE ")\n"); \
+    printf("SIZE::   number of elements = %d\n",_SIZE); \
+    for(int _IT_i = 0; _IT_i < _SIZE; _IT_i++) \
+        _VAR[_IT_i] = _ZEROVAL; \
+    printf("         Initialized with value: " #_ZEROVAL "\n"); \
+    printf("         size of element = %ld bytes\n",sizeof(_TYPE)); \
+    hByte(_SIZE * sizeof(_TYPE)); \
+    printf("ARRAYS:: To free memory please use free(" #_VAR "), " #_VAR " = nullptr;\n\n")
 
 #define CREATEMATRIX(_VAR,_TYPE,_SIZEROWS,_SIZECOLS,_ZEROVAL) \
-	if ( (_VAR=(_TYPE**) malloc( _SIZEROWS * sizeof(_TYPE*) )) == NULL ) \
-		perror("pointer memory allocation for " #_VAR "*"); \
-	if ( (_VAR[0]=(_TYPE*) malloc( _SIZEROWS * _SIZECOLS * sizeof(_TYPE) )) == NULL ) \
-		perror("memory allocation for " #_VAR); \
-	for( int _IT_i = 1; _IT_i < _SIZEROWS; _IT_i++ ) \
-		_VAR[_IT_i] = _VAR[_IT_i-1] + _SIZECOLS; \
-	printf("\nNAME::   Matrix Name = " #_VAR "(" #_TYPE ")\n"); \
-	printf("SIZE::   number of elements = %d x %d\n",_SIZEROWS,_SIZECOLS); \
-	for( int _IT_i = 0; _IT_i < _SIZEROWS; _IT_i++ ) \
-		for( int _IT_j = 0; _IT_j < _SIZECOLS; _IT_j++ ) \
-			_VAR[_IT_i][_IT_j] = _ZEROVAL; \
-	printf("         Initialized with value: " #_ZEROVAL "\n"); \
-	printf("         size of element = %d bytes\n",sizeof(_TYPE)); \
-	printf("         size of matrix = %s\n",hByte(_SIZEROWS * _SIZECOLS * sizeof(_TYPE))); \
-	printf("MATRIX:: To avoid memory leaks, free memory via a 2-step proc:\n"); \
-	printf("\tfree(" #_VAR "[0]);\n\tfree(" #_VAR "), " #_VAR " = NULL;\n\n")
+    if ( (_VAR=(_TYPE**) malloc( _SIZEROWS * sizeof(_TYPE*) )) == NULL ) \
+        perror("pointer memory allocation for " #_VAR "*"); \
+    if ( (_VAR[0]=(_TYPE*) malloc( _SIZEROWS * _SIZECOLS * sizeof(_TYPE) )) == NULL ) \
+        perror("memory allocation for " #_VAR); \
+    for( int _IT_i = 1; _IT_i < _SIZEROWS; _IT_i++ ) \
+        _VAR[_IT_i] = _VAR[_IT_i-1] + _SIZECOLS; \
+    printf("\nNAME::   Matrix Name = " #_VAR "(" #_TYPE ")\n"); \
+    printf("SIZE::   number of elements = %d x %d\n",_SIZEROWS,_SIZECOLS); \
+    for( int _IT_i = 0; _IT_i < _SIZEROWS; _IT_i++ ) \
+        for( int _IT_j = 0; _IT_j < _SIZECOLS; _IT_j++ ) \
+            _VAR[_IT_i][_IT_j] = _ZEROVAL; \
+    printf("         Initialized with value: " #_ZEROVAL "\n"); \
+    printf("         size of element = %ld bytes\n",sizeof(_TYPE)); \
+    hByte(_SIZEROWS * _SIZECOLS * sizeof(_TYPE)); \
+    printf("MATRIX:: To avoid memory leaks, free memory via a 2-step proc:\n"); \
+    printf("\tfree(" #_VAR "[0]);\n\tfree(" #_VAR "), " #_VAR " = nullptr;\n\n")
 
 #define SETARRAY(_VAR,_SIZE,_ZEROVAL) \
     printf("MATRIX " #_VAR "(%d) / NEWVAL=" #_ZEROVAL "\n",_SIZE); \

@@ -1,6 +1,7 @@
 /*
 
 icc -std=c++11 main.cpp -o exe -qopenmp && ./exe
+g++ -std=c++11 -Wall -Wextra -Werror main.cpp -o exe -fopenmp && ./exe
 
 */
 #include <iostream>
