@@ -1,2 +1,2 @@
-ssh -i workshop.hpc.pem -p 37022 workshop.hpc@login01-hpc.urosario.edu.co
+ssh -i my.name.pem -p 37022 my.name@login01-hpc.urosario.edu.co
 
